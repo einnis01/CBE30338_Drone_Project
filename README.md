@@ -1,3 +1,6 @@
+# Please Note
+This file has been taken from https://github.com/Ubotica/telloCV/ and modified for optimization with our project goals.
+
 # Tellocv tracker
 Tracking code for the Tello drone. It uses opencv and tellopy to identify a ball in the scene and then send commands to the drone.
 It is written in python3 and 
