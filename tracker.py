@@ -34,154 +34,186 @@ import imutils
 from imutils.video import VideoStream
 
 def main():
-    """Handles inpur from file or stream, tests the tracker class"""
-    arg_parse = argparse.ArgumentParser()
-    arg_parse.add_argument("-v", "--video",
-                           help="path to the (optional) video file")
-    args = vars(arg_parse.parse_args())
+	"""Handles inpur from file or stream, tests the tracker class"""
+	arg_parse = argparse.ArgumentParser()
+	arg_parse.add_argument("-v", "--video",
+						   help="path to the (optional) video file")
+	args = vars(arg_parse.parse_args())
 
-    # define the lower and upper boundaries of the "green"
-    # ball in the HSV color space. NB the hue range in
-    # opencv is 180, normally it is 360
-    green_lower = (50, 50, 50)
-    green_upper = (70, 255, 255)
-    # red_lower = (0, 50, 50)
-    # red_upper = (20, 255, 255)
-    # blue_lower = (110, 50, 50)
-    # upper_blue = (130, 255, 255)
+	# define the lower and upper boundaries of the "green"
+	# ball in the HSV color space. NB the hue range in
+	# opencv is 180, normally it is 360
+	#green_lower = (50, 50, 50)
+	#green_upper = (70, 255, 255)
+	# red_lower = (0, 50, 50)
+	# red_upper = (20, 255, 255)
+	# blue_lower = (110, 50, 50)
+	# upper_blue = (130, 255, 255)
+	color_lower = (110, 50, 50)  #BGR
+	color_upper = (130, 255, 255) #RGB
 
-    # if a video path was not supplied, grab the reference
-    # to the webcam
-    if not args.get("video", False):
-        vid_stream = VideoStream(src=0).start()
 
-    # otherwise, grab a reference to the video file
-    else:
-        vid_stream = cv2.VideoCapture(args["video"])
+	# if a video path was not supplied, grab the reference
+	# to the webcam
+	if not args.get("video", False):
+		vid_stream = VideoStream(src=0).start()
 
-    # allow the camera or video file to warm up
-    time.sleep(2.0)
-    stream = args.get("video", False)
-    frame = get_frame(vid_stream, stream)
-    height, width = frame.shape[0], frame.shape[1]
-    greentracker = Tracker(height, width, green_lower, green_upper)
+	# otherwise, grab a reference to the video file
+	else:
+		vid_stream = cv2.VideoCapture(args["video"])
 
-    # keep looping until no more frames
-    more_frames = True
-    while more_frames:
-        greentracker.track(frame)
-        frame = greentracker.draw_arrows(frame)
-        show(frame)
-        frame = get_frame(vid_stream, stream)
-        if frame is None:
-            more_frames = False
+	# allow the camera or video file to warm up
+	time.sleep(2.0)
+	stream = args.get("video", False)
+	frame = get_frame(vid_stream, stream)
+	height, width = frame.shape[0], frame.shape[1]
+	colortracker = Tracker(height, width, color_lower, color_upper)
+	
 
-    # if we are not using a video file, stop the camera video stream
-    if not args.get("video", False):
-        vid_stream.stop()
+	# keep looping until no more frames
+	more_frames = True
+	while more_frames:
+		colortracker.track(frame)
+		frame = colortracker.draw_arrows(frame)
+		show(frame)
+		frame = get_frame(vid_stream, stream)
+		if frame is None:
+			more_frames = False
 
-    # otherwise, release the camera
-    else:
-        vid_stream.release()
+	# if we are not using a video file, stop the camera video stream
+	if not args.get("video", False):
+		vid_stream.stop()
 
-    # close all windows
-    cv2.destroyAllWindows()
+	# otherwise, release the camera
+	else:
+		vid_stream.release()
+
+	# close all windows
+	cv2.destroyAllWindows()
 
 
 def get_frame(vid_stream, stream):
-    """grab the current video frame"""
-    frame = vid_stream.read()
-    # handle the frame from VideoCapture or VideoStream
-    frame = frame[1] if stream else frame
-    # if we are viewing a video and we did not grab a frame,
-    # then we have reached the end of the video
-    if frame is None:
-        return None
-    else:
-        frame = imutils.resize(frame, width=600)
-        return frame
+	"""grab the current video frame"""
+	frame = vid_stream.read()
+	# handle the frame from VideoCapture or VideoStream
+	frame = frame[1] if stream else frame
+	# if we are viewing a video and we did not grab a frame,
+	# then we have reached the end of the video
+	if frame is None:
+		return None
+	else:
+		frame = imutils.resize(frame, width=600)
+		return frame
 
 
 def show(frame):
-    """show the frame to cv2 window"""
-    cv2.imshow("Frame", frame)
-    key = cv2.waitKey(1) & 0xFF
+	"""show the frame to cv2 window"""
+	cv2.imshow("Frame", frame)
+	key = cv2.waitKey(1) & 0xFF
 
-    # if the 'q' key is pressed, stop the loop
-    if key == ord("q"):
-        exit()
+	# if the 'q' key is pressed, stop the loop
+	if key == ord("q"):
+		exit()
 
 
 class Tracker:
-    """
-    A basic color tracker, it will look for colors in a range and
-    create an x and y offset valuefrom the midpoint
-    """
+	"""
+	A basic color tracker, it will look for colors in a range and
+	create an x and y offset valuefrom the midpoint
+	"""
 
-    def __init__(self, height, width, color_lower, color_upper):
-        self.color_lower = color_lower
-        self.color_upper = color_upper
-        self.midx = int(width / 2)
-        self.midy = int(height / 2)
-        self.xoffset = 0
-        self.yoffset = 0
+	def __init__(self, height, width, color_lower, color_upper):
+		self.color_lower = color_lower
+		self.color_upper = color_upper
+		self.midx = int(width / 2)
+		self.midy = int(height / 2)
+		self.xoffset = 0
+		self.yoffset = 0
 
-    def draw_arrows(self, frame):
-        """Show the direction vector output in the cv2 window"""
-        #cv2.putText(frame,"Color:", (0, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, thickness=2)
-        cv2.arrowedLine(frame, (self.midx, self.midy),
-                        (self.midx + self.xoffset, self.midy - self.yoffset),
-                        (0, 0, 255), 5)
-        return frame
+	def draw_arrows(self, frame):
+		"""Show the direction vector output in the cv2 window"""
+		#cv2.putText(frame,"Color:", (0, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, thickness=2)
+		cv2.arrowedLine(frame, (self.midx, self.midy),
+						(self.midx + self.xoffset, self.midy - self.yoffset),
+						(0, 0, 255), 5)
+		return frame
 
-    def track(self, frame):
-        """Simple HSV color space tracking"""
-        # resize the frame, blur it, and convert it to the HSV
-        # color space
-        blurred = cv2.GaussianBlur(frame, (11, 11), 0)
-        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+	def track(self, frame):
+		"""Simple HSV color space tracking"""
+		# resize the frame, blur it, and convert it to the HSV
+		# color space
+		blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+		hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
-        # construct a mask for the color then perform
-        # a series of dilations and erosions to remove any small
-        # blobs left in the mask
-        mask = cv2.inRange(hsv, self.color_lower, self.color_upper)
-        mask = cv2.erode(mask, None, iterations=2)
-        mask = cv2.dilate(mask, None, iterations=2)
+		# construct a mask for the color then perform
+		# a series of dilations and erosions to remove any small
+		# blobs left in the mask
+		mask = cv2.inRange(hsv, self.color_lower, self.color_upper)
+		mask = cv2.erode(mask, None, iterations=2)
+		mask = cv2.dilate(mask, None, iterations=2)
 
-        # find contours in the mask and initialize the current
-        # (x, y) center of the ball
-        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0]
-        center = None
+		# find contours in the mask and initialize the current
+		# (x, y) center of the ball
+		cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+								cv2.CHAIN_APPROX_SIMPLE)
+		cnts = cnts[0]
+		center = None
 
-        # only proceed if at least one contour was found
-        if len(cnts) > 0:
-            # find the largest contour in the mask, then use
-            # it to compute the minimum enclosing circle and
-            # centroid
-            c = max(cnts, key=cv2.contourArea)
-            ((x, y), radius) = cv2.minEnclosingCircle(c)
-            M = cv2.moments(c)
-            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+		# only proceed if at least one contour was found
+		if len(cnts) > 0:
+			# find the largest contour in the mask, then use
+			# it to compute the minimum enclosing circle and
+			# centroid
 
-            # only proceed if the radius meets a minimum size
-            if radius > 10:
-                # draw the circle and centroid on the frame,
-                # then update the list of tracked points
-                cv2.circle(frame, (int(x), int(y)), int(radius),
-                           (0, 255, 255), 2)
-                cv2.circle(frame, center, 5, (0, 0, 255), -1)
+			#initialize temp variables
+			lowest_error = None 
+			best_xoffset = 0
+			best_yoffset = 0
+			best_x = 0
+			best_y = 0
+			best_radius = 0
+			best_center = (0,0)
 
-                self.xoffset = int(center[0] - self.midx)
-                self.yoffset = int(self.midy - center[1])
-            else:
-                self.xoffset = 0
-                self.yoffset = 0
-        else:
-            self.xoffset = 0
-            self.yoffset = 0
-        return self.xoffset, self.yoffset
+			for c in cnts: #iterate through every contour
+				#c = max(cnts, key=cv2.contourArea)
+				((x, y), radius) = cv2.minEnclosingCircle(c)
+				M = cv2.moments(c)
+				center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+
+				# only proceed if the radius meets a minimum size
+				if radius > 10:
+					
+
+					temp_xoffset = int(center[0] - self.midx) #store the xoffset and yoffset for each iteration of the loop
+					temp_yoffset = int(self.midy - center[1])
+
+					#calculate the distance from the previous x and y by finding the squared error
+					sqrd_error = ((temp_xoffset-self.xoffset)**2) + ((temp_yoffset - self.yoffset)**2)
+
+					#Set xoffset and yoffset for the lowest possible distance
+					if lowest_error is None or sqrd_error < lowest_error:
+						lowest_error = sqrd_error
+						best_xoffset = temp_xoffset
+						best_yoffset = temp_yoffset
+						best_x = x
+						best_y = y
+						best_radius = radius
+						best_center = center
+
+
+			#Set xoffset and yoffset to the best values calculated in the for loop		
+			self.xoffset = best_xoffset
+			self.yoffset = best_yoffset
+			# draw the circle and centroid on the frame,
+			# then update the list of tracked points
+			cv2.circle(frame, (int(best_x), int(best_y)), int(best_radius), # Draws the yellow circle on video stream
+					(0, 255, 255), 2)
+			cv2.circle(frame, best_center, 5, (0, 0, 255), -1) # Draws a red dot in the center of the yellow circle
+		else:
+			self.xoffset = 0
+			self.yoffset = 0
+
+		return self.xoffset, self.yoffset #feed the optimized xoffset and yoffset to telloCV.py
 
 if __name__ == '__main__':
-    main()
+	main()
