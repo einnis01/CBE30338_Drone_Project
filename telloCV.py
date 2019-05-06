@@ -91,9 +91,9 @@ class TelloCV(object):
         #green_lower = (30, 50, 50) 
         #green_upper = (80, 255, 255)
         #red_lower = (0, 50, 50)
-        # red_upper = (20, 255, 255)
-        # blue_lower = (0, 0, 130)
-        # upper_blue = (150, 220, 255)
+        #red_upper = (20, 255, 255)
+        #blue_lower = (0, 0, 130)
+        #upper_blue = (150, 220, 255)
         color_lower = (90, 50, 50)
         color_upper =(110, 255, 255,)
         self.track_cmd = ""
@@ -208,8 +208,8 @@ class TelloCV(object):
                 #Control Equations, constants are adjusted as needed
                 Px = 0.1*ex
                 Py = 0.1*ey
-                Ix = Ix + -0.0*ex*delta_t
-                Iy = Iy + -0.0*ey*delta_t
+                Ix = Ix + -0.001*ex*delta_t
+                Iy = Iy + -0.001*ey*delta_t
                 Dx = 0.01*(ex - ex_prev)/(delta_t)
                 Dy = 0.01*(ey - ey_prev)/(delta_t)
 
@@ -235,7 +235,7 @@ class TelloCV(object):
         xoff, yoff = self.colortracker.track(image)
         image = self.colortracker.draw_arrows(image)
         Vx,Vy=self.PID.send([xoff, yoff, distance])        
-        print("TARGET_V: ({Vx},{Vy})".format(Vx=Vx,Vy=Vy)) # Print statement to ensure Vx and Vy are reasonable values (<50)   
+        # print("TARGET_V: ({Vx},{Vy})".format(Vx=Vx,Vy=Vy)) # Print statement to ensure Vx and Vy are reasonable values (<50)   
                 
         # Create a loop to implement the Vx and Vy as a command to move the drone accordingly
         cmd = "" 
